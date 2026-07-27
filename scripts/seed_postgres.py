@@ -3,29 +3,13 @@ import pandas as pd
 import psycopg2
 from psycopg2.extras import execute_batch
 import requests
+from src.utils.postgres_client import get_db_connection
 
 # -------------------------------------------------------------------
 # Configuration
 # -------------------------------------------------------------------
-POSTGRES_HOST = "127.0.0.1"
-POSTGRES_PORT = 5433
-POSTGRES_DB = "aviation_db"
-POSTGRES_USER = "postgres"
-POSTGRES_PASSWORD = "postgres"
-
 AIRLINES_URL = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat"
 ROUTES_URL = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat"
-
-
-def get_db_connection():
-    """Establishes connection to the local Postgres container."""
-    return psycopg2.connect(
-        host=POSTGRES_HOST,
-        port=POSTGRES_PORT,
-        dbname=POSTGRES_DB,
-        user=POSTGRES_USER,
-        password=POSTGRES_PASSWORD
-    )
 
 
 def create_tables(conn):
