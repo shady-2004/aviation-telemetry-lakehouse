@@ -1,0 +1,26 @@
+name: 'aviation_lakehouse'
+version: '1.0.0'
+profile: 'aviation_lakehouse'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+source-paths: ["sources"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  aviation_lakehouse:
+    silver:
+      staging:
+        +materialized: view
+      
+      intermediate:
+        +materialized: external
+        +location: 's3://silver/{{ model.name }}.parquet'
+        +format: parquet
+      

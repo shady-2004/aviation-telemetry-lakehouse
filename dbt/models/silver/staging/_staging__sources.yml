@@ -1,0 +1,28 @@
+version: 2
+
+sources:
+  - name: ourairports
+    meta: 
+      external_location: 's3://bronze/ourairports/airports.csv'
+    tables:
+      - name: raw_airports
+        
+  - name: opensky
+    meta: 
+      external_location: 's3://bronze/opensky/flights.parquet'
+    tables:
+      - name: raw_flights
+
+  - name: postgres
+    meta: 
+      external_location: 's3://bronze/postgres/raw_routes.csv'
+    tables:
+      - name: raw_routes
+
+  - name: postgres
+    meta: 
+      external_location: 's3://bronze/postgres/raw_airlines.csv'
+    tables:
+      - name: raw_airlines
+
+    
