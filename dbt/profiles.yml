@@ -5,12 +5,13 @@ aviation_lakehouse:
     dev:
       type: duckdb
       path: 'aviation_lakehouse.duckdb'
+      external_root: 's3://silver'
       extensions:
         - parquet
         - httpfs
       
       settings:
-        s3_endpoint: 'http://localhost:9000'
+        s3_endpoint: '127.0.0.1:9000'
         s3_access_key_id: 'minioadmin'
         s3_secret_access_key: 'minioadmin'
         s3_use_ssl: false

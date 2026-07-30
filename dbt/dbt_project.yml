@@ -4,7 +4,6 @@ profile: 'aviation_lakehouse'
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]
-source-paths: ["sources"]
 macro-paths: ["macros"]
 test-paths: ["tests"]
 
@@ -21,6 +20,5 @@ models:
       
       intermediate:
         +materialized: external
-        +location: 's3://silver/{{ model.name }}.parquet'
         +format: parquet
       
