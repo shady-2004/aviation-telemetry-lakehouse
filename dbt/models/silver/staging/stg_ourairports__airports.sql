@@ -30,6 +30,15 @@ renamed as (
         from source 
         WHERE ident is not null 
         and trim(ident) != ''
+
+        -- Deduplicate
+
+        qualify row_number() over (
+        partition by upper(trim(ident))
+        order by 
+            case when icao_code is not null then 1 else 2 end,
+            case when iata_code is not null then 1 else 2 end
+    ) = 1
 )
 
 select * from renamed
