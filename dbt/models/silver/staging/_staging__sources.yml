@@ -9,7 +9,7 @@ sources:
         
   - name: opensky
     meta: 
-      external_location: 's3://bronze/opensky/flights.parquet'
+      external_location: 's3://bronze/opensky/*/*.json'
     tables:
       - name: raw_flights
 
