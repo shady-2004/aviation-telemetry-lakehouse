@@ -23,7 +23,7 @@ cleaned as (
         -- Source ID
         airline_id
     from source 
-)
+),
 
 renamed as (
     select
@@ -47,7 +47,9 @@ renamed as (
         order by 
             case when icao_code is not null then 1 else 2 end,
             case when is_active then 1 else 2 end,
-            case when callsign is not null then 1 else 2 
+            case when callsign is not null then 1 else 2 end
     ) = 1
 )
+
+select * from renamed
 
