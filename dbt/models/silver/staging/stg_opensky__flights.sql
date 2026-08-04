@@ -62,3 +62,5 @@ renamed as (
         ) = 1
 
 )
+
+select * from renamed

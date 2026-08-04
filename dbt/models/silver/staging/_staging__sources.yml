@@ -14,15 +14,12 @@ sources:
       - name: raw_flights
 
   - name: postgres
-    meta: 
-      external_location: 's3://bronze/postgres/raw_routes.csv'
     tables:
       - name: raw_routes
-
-  - name: postgres
-    meta: 
-      external_location: 's3://bronze/postgres/raw_airlines.csv'
-    tables:
+        meta: 
+          external_location: 's3://bronze/postgres/routes.parquet'
       - name: raw_airlines
+        meta: 
+          external_location: 's3://bronze/postgres/airlines.parquet'
 
     

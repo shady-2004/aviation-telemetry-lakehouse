@@ -9,11 +9,11 @@ cleaned as (
             when trim(airline) in ('','\N','None','-') then null else upper(trim(airline))
             end as airline_code,
         case 
-            when trim(source_aiport) in ('','\N','None','-') then null else upper(trim(source_aiport))
+            when trim(source_airport) in ('','\N','None','-') then null else upper(trim(source_airport))
             end as source_airport_code,
         case 
             when trim(destination_airport) in ('','\N','None','-') then null else upper(trim(destination_airport))
-            end as destination_airport_code
+            end as destination_airport_code,
             
         -- Route Attributes
         case 
@@ -30,7 +30,7 @@ cleaned as (
 
         -- Metadata
     from source
-)
+),
 
 renamed as (
     select
@@ -55,4 +55,6 @@ renamed as (
             case when equipment_codes is not null then 1 else 2 end
     ) = 1
 )
+
+select * from renamed
 
