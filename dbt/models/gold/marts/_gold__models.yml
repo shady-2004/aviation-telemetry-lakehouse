@@ -1,0 +1,215 @@
+version: 2
+
+models:
+  # =========================================================================
+  # CORE MARTS (models/gold/marts/core/)
+  # =========================================================================
+  - name: dim_airports
+    description: "Conformed dimension representing physical global airport facilities, runways, spatial coordinates, and regional classification."
+    columns:
+      - name: airport_hk
+        description: "Surrogate key generated from airport_ident."
+        tests:
+          - unique
+          - not_null
+
+      - name: airport_ident
+        description: "Natural unique source identifier for the airfield (e.g., 'EGLL', 'KJFK', '00A')."
+        tests:
+          - unique
+          - not_null
+
+      - name: airport_type
+        description: "Classification type of the airfield (e.g., large_airport, medium_airport, heliport)."
+        tests:
+          - not_null
+
+      - name: iso_country
+        description: "Two-letter ISO country code of the airport location."
+        tests:
+          - not_null
+
+      - name: latitude
+        tests:
+          - not_null
+
+      - name: longitude
+        tests:
+          - not_null
+
+
+  - name: dim_airlines
+    description: "Conformed dimension containing global commercial, cargo, and regional airlines, callsigns, and active operational status."
+    columns:
+      - name: airline_hk
+        description: "Surrogate key generated from coalesce(icao_code, iata_code, airline_id)."
+        tests:
+          - unique
+          - not_null
+
+      - name: airline_id
+        description: "Natural integer primary key from the PostgreSQL source table."
+        tests:
+          - unique
+          - not_null
+
+      - name: airline_name
+        description: "Official registered commercial name of the airline."
+        tests:
+          - not_null
+
+      - name: is_active
+        description: "Flag indicating whether the airline is currently operating flights."
+        tests:
+          - not_null
+
+
+  - name: dim_date
+    description: "Static calendar dimension spine spanning 2020 through 2030 for star-schema date joins."
+    columns:
+      - name: date_key
+        description: "Surrogate primary key in YYYYMMDD integer format."
+        tests:
+          - unique
+          - not_null
+
+      - name: date_day
+        description: "Standard calendar date object."
+        tests:
+          - unique
+          - not_null
+
+      - name: is_weekend
+        description: "Boolean flag indicating whether the date is Saturday or Sunday."
+        tests:
+          - not_null
+
+
+  # =========================================================================
+  # COMMERCIAL MARTS (models/gold/marts/commercial/)
+  # =========================================================================
+  - name: dim_routes
+    description: "Commercial corridor dimension modeling directional city-pairs with pre-joined origin and destination airport attributes."
+    columns:
+      - name: route_hk
+        description: "Surrogate key generated from airline_code, source_airport_code, and destination_airport_code."
+        tests:
+          - unique
+          - not_null
+
+      - name: airline_code
+        description: "2-character IATA or 3-character ICAO carrier code."
+        tests:
+          - not_null
+
+      - name: source_airport_code
+        description: "Departure airport identifier code."
+        tests:
+          - not_null
+
+      - name: destination_airport_code
+        description: "Arrival airport identifier code."
+        tests:
+          - not_null
+
+      - name: route_distance_km
+        description: "Great-circle Haversine distance between origin and destination in kilometers."
+        tests:
+          - not_null
+
+
+  - name: fct_daily_route_summary
+    description: "Aggregated commercial fact table summarizing daily flight volume, fleet utilization, and performance metrics per route corridor."
+    columns:
+      - name: daily_route_summary_hk
+        description: "Surrogate primary key hashing date_key and route_hk."
+        tests:
+          - unique
+          - not_null
+
+      - name: date_key
+        description: "Foreign key joining to dim_date."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+
+      - name: route_hk
+        description: "Foreign key joining to dim_routes."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_routes')
+              field: route_hk
+
+      - name: airline_hk
+        description: "Foreign key joining to dim_airlines."
+        tests:
+          - relationships:
+              to: ref('dim_airlines')
+              field: airline_hk
+              config:
+                severity: warn
+
+      - name: total_flights_operated
+        description: "Total count of distinct flights operated on this route corridor for the day."
+        tests:
+          - not_null
+
+
+  # =========================================================================
+  # OPERATIONS MARTS (models/gold/marts/operations/)
+  # =========================================================================
+  - name: fct_flight_telemetry
+    description: "Atomic kinematic fact table capturing periodic ADS-B transponder state broadcasts."
+    columns:
+      - name: flight_ping_hk
+        description: "Surrogate primary key generated from icao_address and position_timestamp."
+        tests:
+          - unique
+          - not_null
+
+      - name: date_key
+        description: "Foreign key joining to dim_date."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+
+      - name: airline_hk
+        description: "Foreign key joining to dim_airlines."
+        tests:
+          - relationships:
+              to: ref('dim_airlines')
+              field: airline_hk
+              config:
+                severity: warn
+
+      - name: icao_address
+        description: "24-bit ICAO transponder hex identifier of the aircraft."
+        tests:
+          - not_null
+
+      - name: latitude
+        tests:
+          - not_null
+
+      - name: longitude
+        tests:
+          - not_null
+
+      - name: flight_phase
+        description: "Operational flight profile category."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['ground', 'climbing', 'cruising', 'descending', 'unknown']
+
+      - name: emergency_status
+        description: "Safety status evaluated from transponder squawk code."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['normal', 'general_emergency', 'radio_failure', 'unlawful_interference']
