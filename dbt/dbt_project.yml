@@ -17,14 +17,22 @@ models:
     silver:
       staging:
         +materialized: view
-      
       intermediate:
         +materialized: external
         +format: parquet
+        +schema: silver_intermediate
 
     gold:
       marts:
-        +materialized: external
-        +format: parquet
-
-      
+        core:
+          +materialized: external
+          +format: parquet
+          +schema: gold_core
+        commercial:
+          +materialized: external
+          +format: parquet
+          +schema: gold_commercial
+        operations:
+          +materialized: external
+          +format: parquet
+          +schema: gold_operations
