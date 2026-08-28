@@ -21,4 +21,10 @@ models:
       intermediate:
         +materialized: external
         +format: parquet
+
+    gold:
+      marts:
+        +materialized: external
+        +format: parquet
+
       

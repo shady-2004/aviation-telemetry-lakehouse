@@ -1,4 +1,3 @@
-{{ config(materialized='table') }}
 
 with flights as (
     select * from {{ ref('int_flights__enriched') }}
