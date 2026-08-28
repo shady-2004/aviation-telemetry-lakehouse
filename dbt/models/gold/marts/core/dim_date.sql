@@ -1,3 +1,4 @@
+{{ config(materialized='table') }}
 
 with spine as (
     -- Generates 1 row per day from 2020-01-01 through 2030-12-31
