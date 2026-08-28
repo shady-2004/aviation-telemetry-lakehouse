@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: int_flights__enriched
+    description: "Enriched live OpenSky flight telemetry joined with airline metadata, standard aviation units, and flight phase tags."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - flight_ping_hk
+    columns:
+      - name: flight_ping_hk
+        description: "Primary surrogate key generated from icao_address and position_timestamp."
+        tests:
+          - unique
+          - not_null
+      - name: icao_address
+        tests:
+          - not_null
+      - name: position_timestamp
+        tests:
+          - not_null
+      - name: flight_phase
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['ground', 'climbing', 'descending', 'cruising', 'level_flight']
+      - name: emergency_status
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['normal', 'general_emergency', 'radio_failure', 'unlawful_interference']
