@@ -1,0 +1,57 @@
+# =====================================
+# dbt Artifacts & Logs
+# =====================================
+target/
+dbt_packages/
+dbt_modules/
+logs/
+*.log
+
+# Sensitive dbt credentials (if stored in project root)
+profiles.yml
+
+# =====================================
+# Python / Bytecode
+# =====================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Python virtual environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Packaging & distribution
+build/
+dist/
+*.egg-info/
+*.egg
+
+# =====================================
+# Local Database & Secrets
+# =====================================
+# Environment variables / secrets
+.env
+*.env
+
+# DuckDB local database files and write-ahead logs
+*.duckdb
+*.duckdb.wal
+*.db
+
+# =====================================
+# OS & Editor Files
+# =====================================
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
