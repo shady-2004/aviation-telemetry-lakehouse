@@ -9,32 +9,32 @@ models:
     columns:
       - name: airport_hk
         description: "Surrogate key generated from airport_ident."
-        tests:
+        data_tests:
           - unique
           - not_null
 
       - name: airport_ident
         description: "Natural unique source identifier for the airfield (e.g., 'EGLL', 'KJFK', '00A')."
-        tests:
+        data_tests:
           - unique
           - not_null
 
       - name: airport_type
         description: "Classification type of the airfield (e.g., large_airport, medium_airport, heliport)."
-        tests:
+        data_tests:
           - not_null
 
       - name: iso_country
         description: "Two-letter ISO country code of the airport location."
-        tests:
+        data_tests:
           - not_null
 
       - name: latitude
-        tests:
+        data_tests:
           - not_null
 
       - name: longitude
-        tests:
+        data_tests:
           - not_null
 
 
@@ -43,24 +43,24 @@ models:
     columns:
       - name: airline_hk
         description: "Surrogate key generated from coalesce(icao_code, iata_code, airline_id)."
-        tests:
+        data_tests:
           - unique
           - not_null
 
       - name: airline_id
         description: "Natural integer primary key from the PostgreSQL source table."
-        tests:
+        data_tests:
           - unique
           - not_null
 
       - name: airline_name
         description: "Official registered commercial name of the airline."
-        tests:
+        data_tests:
           - not_null
 
       - name: is_active
         description: "Flag indicating whether the airline is currently operating flights."
-        tests:
+        data_tests:
           - not_null
 
 
@@ -69,19 +69,19 @@ models:
     columns:
       - name: date_key
         description: "Surrogate primary key in YYYYMMDD integer format."
-        tests:
+        data_tests:
           - unique
           - not_null
 
       - name: date_day
         description: "Standard calendar date object."
-        tests:
+        data_tests:
           - unique
           - not_null
 
       - name: is_weekend
         description: "Boolean flag indicating whether the date is Saturday or Sunday."
-        tests:
+        data_tests:
           - not_null
 
 
@@ -93,28 +93,28 @@ models:
     columns:
       - name: route_hk
         description: "Surrogate key generated from airline_code, source_airport_code, and destination_airport_code."
-        tests:
+        data_tests:
           - unique
           - not_null
 
       - name: airline_code
         description: "2-character IATA or 3-character ICAO carrier code."
-        tests:
+        data_tests:
           - not_null
 
       - name: source_airport_code
         description: "Departure airport identifier code."
-        tests:
+        data_tests:
           - not_null
 
       - name: destination_airport_code
         description: "Arrival airport identifier code."
-        tests:
+        data_tests:
           - not_null
 
       - name: route_distance_km
         description: "Great-circle Haversine distance between origin and destination in kilometers."
-        tests:
+        data_tests:
           - not_null
 
 
@@ -123,13 +123,13 @@ models:
     columns:
       - name: daily_route_summary_hk
         description: "Surrogate primary key hashing date_key and route_hk."
-        tests:
+        data_tests:
           - unique
           - not_null
 
       - name: date_key
         description: "Foreign key joining to dim_date."
-        tests:
+        data_tests:
           - not_null
           - relationships:
               to: ref('dim_date')
@@ -137,7 +137,7 @@ models:
 
       - name: route_hk
         description: "Foreign key joining to dim_routes."
-        tests:
+        data_tests:
           - not_null
           - relationships:
               to: ref('dim_routes')
@@ -145,7 +145,7 @@ models:
 
       - name: airline_hk
         description: "Foreign key joining to dim_airlines."
-        tests:
+        data_tests:
           - relationships:
               to: ref('dim_airlines')
               field: airline_hk
@@ -154,7 +154,7 @@ models:
 
       - name: total_flights_operated
         description: "Total count of distinct flights operated on this route corridor for the day."
-        tests:
+        data_tests:
           - not_null
 
 
@@ -166,13 +166,13 @@ models:
     columns:
       - name: flight_ping_hk
         description: "Surrogate primary key generated from icao_address and position_timestamp."
-        tests:
+        data_tests:
           - unique
           - not_null
 
       - name: date_key
         description: "Foreign key joining to dim_date."
-        tests:
+        data_tests:
           - not_null
           - relationships:
               to: ref('dim_date')
@@ -180,7 +180,7 @@ models:
 
       - name: airline_hk
         description: "Foreign key joining to dim_airlines."
-        tests:
+        data_tests:
           - relationships:
               to: ref('dim_airlines')
               field: airline_hk
@@ -189,27 +189,27 @@ models:
 
       - name: icao_address
         description: "24-bit ICAO transponder hex identifier of the aircraft."
-        tests:
+        data_tests:
           - not_null
 
       - name: latitude
-        tests:
+        data_tests:
           - not_null
 
       - name: longitude
-        tests:
+        data_tests:
           - not_null
 
       - name: flight_phase
         description: "Operational flight profile category."
-        tests:
+        data_tests:
           - not_null
           - accepted_values:
               values: ['ground', 'climbing', 'cruising', 'descending', 'unknown']
 
       - name: emergency_status
         description: "Safety status evaluated from transponder squawk code."
-        tests:
+        data_tests:
           - not_null
           - accepted_values:
               values: ['normal', 'general_emergency', 'radio_failure', 'unlawful_interference']

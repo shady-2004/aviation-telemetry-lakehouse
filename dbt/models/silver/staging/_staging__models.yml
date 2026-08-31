@@ -6,160 +6,145 @@ models:
   # -------------------------------------------------------------------------
   - name: stg_opensky__flights
     description: "Deduplicated and typed live state vector telemetry from OpenSky ADS-B feeds."
-    tests:
+    data_tests:
       - dbt_utils.unique_combination_of_columns:
-          arguments:
-            combination_of_columns:
-              - icao_address
-              - position_timestamp
+          combination_of_columns:
+            - icao_address
+            - position_timestamp
     columns:
       - name: icao_address
         description: "Unique 24-bit ICAO transponder address in lowercase hex."
-        tests:
+        data_tests:
           - not_null
 
       - name: position_timestamp
         description: "Unix timestamp when the position was recorded."
-        tests:
+        data_tests:
           - not_null
 
       - name: latitude
         description: "WGS-84 latitude coordinate in degrees."
-        tests:
+        data_tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              arguments:
-                min_value: -90
-                max_value: 90
-                row_condition: "latitude is not null"
+              min_value: -90
+              max_value: 90
+              row_condition: "latitude is not null"
 
       - name: longitude
         description: "WGS-84 longitude coordinate in degrees."
-        tests:
+        data_tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              arguments:
-                min_value: -180
-                max_value: 180
-                row_condition: "longitude is not null"
+              min_value: -180
+              max_value: 180
+              row_condition: "longitude is not null"
 
       - name: velocity_mps
         description: "Horizontal ground speed in meters per second."
-        tests:
+        data_tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              arguments:
-                min_value: 0
-                row_condition: "velocity_mps is not null"
+              min_value: 0
+              row_condition: "velocity_mps is not null"
 
       - name: true_track_degrees
         description: "True track angle in degrees clockwise from north."
-        tests:
+        data_tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              arguments:
-                min_value: 0
-                max_value: 360
-                row_condition: "true_track_degrees is not null"
+              min_value: 0
+              max_value: 360
+              row_condition: "true_track_degrees is not null"
 
       - name: is_on_ground
-        tests:
+        data_tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: [true, false]
+              values: [true, false]
 
   # -------------------------------------------------------------------------
   # 2. Postgres Airlines Reference Staging View
   # -------------------------------------------------------------------------
   - name: stg_postgres__airlines
     description: "Cleaned commercial airline metadata from PostgreSQL."
-    tests:
+    data_tests:
       - dbt_utils.unique_combination_of_columns:
-          arguments:
-            combination_of_columns:
-              - airline_id
+          combination_of_columns:
+            - airline_id
     columns:
       - name: airline_id
-        tests:
+        data_tests:
           - not_null
           - unique
 
       - name: airline_name
-        tests:
+        data_tests:
           - not_null
 
       - name: icao_code
         description: "3-letter ICAO airline designator."
-        tests:
+        data_tests:
           - dbt_expectations.expect_column_values_to_match_regex:
-              arguments:
-                regex: "^[A-Z0-9]{3}$"
-                row_condition: "icao_code is not null"
+              regex: "^[A-Z0-9]{3}$"
+              row_condition: "icao_code is not null"
 
       - name: iata_code
         description: "2-letter IATA airline designator."
-        tests:
+        data_tests:
           - dbt_expectations.expect_column_values_to_match_regex:
-              arguments:
-                regex: "^[A-Z0-9]{2}$"
-                row_condition: "iata_code is not null"
+              regex: "^[A-Z0-9]{2}$"
+              row_condition: "iata_code is not null"
 
       - name: is_active
-        tests:
+        data_tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: [true, false]
+              values: [true, false]
 
   # -------------------------------------------------------------------------
   # 3. Postgres Routes Reference Staging View
   # -------------------------------------------------------------------------
   - name: stg_postgres__routes
     description: "Cleaned flight route corridors connecting origin and destination airports."
-    tests:
+    data_tests:
       - dbt_utils.unique_combination_of_columns:
-          arguments:
-            combination_of_columns:
-              - airline_code
-              - source_airport_code
-              - destination_airport_code
+          combination_of_columns:
+            - airline_code
+            - source_airport_code
+            - destination_airport_code
     columns:
       - name: airline_code
-        tests:
+        data_tests:
           - not_null
 
       - name: source_airport_code
         description: "Origin airport 3-letter IATA or 4-letter ICAO code."
-        tests:
+        data_tests:
           - not_null
           - relationships:
-              arguments:
-                to: ref('stg_ourairports__airports')
-                field: airport_ident
+              to: ref('stg_ourairports__airports')
+              field: airport_ident
               config:
                 severity: warn
 
       - name: destination_airport_code
         description: "Destination airport 3-letter IATA or 4-letter ICAO code."
-        tests:
+        data_tests:
           - not_null
           - relationships:
-              arguments:
-                to: ref('stg_ourairports__airports')
-                field: airport_ident
+              to: ref('stg_ourairports__airports')
+              field: airport_ident
               config:
                 severity: warn
 
       - name: stop_count
-        tests:
+        data_tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              arguments:
-                min_value: 0
+              min_value: 0
 
       - name: is_codeshare
-        tests:
+        data_tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: [true, false]
+              values: [true, false]
 
   # -------------------------------------------------------------------------
   # 4. OurAirports Reference Staging View
@@ -169,48 +154,44 @@ models:
     columns:
       - name: airport_ident
         description: "Primary key identifier code (e.g. CA-0001, HECA, KJFK)."
-        tests:
+        data_tests:
           - not_null
           - unique
 
       - name: airport_name
-        tests:
+        data_tests:
           - not_null
 
       - name: airport_type
-        tests:
+        data_tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - 'large_airport'
-                  - 'medium_airport'
-                  - 'small_airport'
-                  - 'heliport'
-                  - 'closed'
-                  - 'seaplane_base'
-                  - 'balloonport'
+              values:
+                - 'large_airport'
+                - 'medium_airport'
+                - 'small_airport'
+                - 'heliport'
+                - 'closed'
+                - 'seaplane_base'
+                - 'balloonport'
 
       - name: latitude
-        tests:
+        data_tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              arguments:
-                min_value: -90
-                max_value: 90
+              min_value: -90
+              max_value: 90
 
       - name: longitude
-        tests:
+        data_tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              arguments:
-                min_value: -180
-                max_value: 180
+              min_value: -180
+              max_value: 180
 
       - name: scheduled_service
-        tests:
+        data_tests:
           - accepted_values:
-              arguments:
-                values: [true, false]
+              values: [true, false]
               config:
                 where: "scheduled_service is not null"
