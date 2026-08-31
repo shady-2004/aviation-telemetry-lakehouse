@@ -1,8 +1,24 @@
-version : '3.8'
+version: '3.8'
 
-services : 
-  #PostgreSQL
-  postgres : 
+x-airflow-common: &airflow-common
+  build: .
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+    AIRFLOW__WEBSERVER__SECRET_KEY: "aviation_lakehouse_secret_key_12345"
+    # DO NOT include _PIP_ADDITIONAL_REQUIREMENTS here
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./dbt:/opt/airflow/dbt
+    - ./src:/opt/airflow/src
+  depends_on:
+    airflow-postgres:
+      condition: service_healthy
+
+services:
+  # --- 1. Source Database (Aviation Application DB) ---
+  postgres:
     image: postgres:16-alpine
     container_name: aviation_postgres
     restart: always
@@ -11,12 +27,11 @@ services :
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: aviation_db
     ports:
-      - 5433:5432
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  
-  #Minio Object Storage (Local S3)
 
+  # --- 2. Lakehouse Storage (Local S3) ---
   minio:
     image: minio/minio:latest
     container_name: aviation_minio
@@ -24,13 +39,81 @@ services :
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-    ports: 
-      - "9000:9000" #  S3 API Port 
-      - "9001:9001" # Web Console Port
+    ports:
+      - "9000:9000"   # S3 API Port
+      - "9001:9001"   # Web Console Port
     command: server /data --console-address ":9001"
-    volumes: 
+    volumes:
       - minio_data:/data
-  
+
+  # --- 3. Airflow Metadata Database ---
+  airflow-postgres:
+    image: postgres:16-alpine
+    container_name: airflow_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      retries: 5
+      timeout: 5s
+
+  # --- 4. Airflow DB Migration & Admin User Init ---
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow_init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate && \
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@lakehouse.local \
+          --password admin
+    restart: on-failure
+
+  # --- 5. Airflow Webserver (UI) ---
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow_webserver
+    restart: always
+    command: webserver
+    ports:
+      - "8085:8080"
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  # --- 6. Airflow Scheduler ---
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow_scheduler
+    restart: always
+    command: scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  # --- 7. Airflow Triggerer (For Deferrable Operators/Sensors) ---
+  airflow-triggerer:
+    <<: *airflow-common
+    container_name: airflow_triggerer
+    restart: always
+    command: triggerer
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
 volumes:
   postgres_data:
   minio_data:
+  airflow_postgres_data:
