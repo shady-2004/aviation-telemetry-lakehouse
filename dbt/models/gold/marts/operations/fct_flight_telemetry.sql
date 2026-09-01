@@ -1,6 +1,12 @@
+{{ config(
+    materialized='external',
+    location='s3://aviation-lakehouse/fct_flight_telemetry',
+    options={'partition_by': 'date_key', 'overwrite_or_ignore': true}
+) }}
 
 with flights as (
     select * from {{ ref('int_flights__enriched') }}
+        where position_timestamp >= current_date() - interval '2 days'
 ),
 
 airlines as (
@@ -43,7 +49,10 @@ select
     -- Timestamps & Ingestion Partition
     f.position_timestamp,
     f.last_seen_timestamp,
-    f.partition_date
+    f.partition_date,
+
+    -- Audit Metadata
+    current_timestamp as dbt_updated_at
 
 from flights f
 left join airlines a

@@ -4,8 +4,8 @@ from pathlib import Path
 from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
-# 1. Added ExecutionConfig import
 from cosmos import DbtTaskGroup, ProjectConfig, ProfileConfig, RenderConfig, ExecutionConfig
+from cosmos.constants import TestBehavior
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -20,6 +20,7 @@ execution_config = ExecutionConfig(
 )
 
 project_config = ProjectConfig(DBT_PROJECT_DIR)
+
 profile_config = ProfileConfig(
     profile_name="aviation_lakehouse",
     target_name="dev",
@@ -39,10 +40,11 @@ default_args = {
     schedule="@hourly",
     catchup=False,
     max_active_runs=1,
+    max_active_tasks=1, 
 )
 def aviation_lakehouse_dag():
 
-    # 1. Ingestion Tasks (Bronze Landing)
+    # 1. Ingestion Tasks (Bronze Landing in MinIO)
     @task
     def ingest_opensky():
         run_ingest_opensky()
@@ -59,40 +61,19 @@ def aviation_lakehouse_dag():
     t_airports = ingest_ourairports()
     t_postgres = ingest_postgres()
 
-    # 2. Staging Layer (Bronze -> Cleaned Silver Views)
-    dbt_staging = DbtTaskGroup(
-        group_id="dbt_staging_layer",
+    # 2. Unified Transformation & Testing Group (Silver Views -> Gold Marts -> Tests)
+    dbt_transformations = DbtTaskGroup(
+        group_id="dbt_transformations",
         project_config=project_config,
         profile_config=profile_config,
-        execution_config=execution_config,  # <-- Added
+        execution_config=execution_config,
         render_config=RenderConfig(
-            select=["path:models/silver/staging"],
+            select=["path:models"],
+            test_behavior=TestBehavior.AFTER_ALL,  # All models build first, then tests run
         ),
     )
 
-    # 3. Intermediate Layer (Joined & Standardized Entities)
-    dbt_intermediate = DbtTaskGroup(
-        group_id="dbt_intermediate_layer",
-        project_config=project_config,
-        profile_config=profile_config,
-        execution_config=execution_config,  # <-- Added
-        render_config=RenderConfig(
-            select=["path:models/silver/intermediate"],
-        ),
-    )
-
-    # 4. Gold Marts Layer 
-    dbt_marts = DbtTaskGroup(
-        group_id="dbt_marts_layer",
-        project_config=project_config,
-        profile_config=profile_config,
-        execution_config=execution_config,  # <-- Added
-        render_config=RenderConfig(
-            select=["path:models/gold/marts"],
-        ),
-    )
-
-    # Layered Orchestration Pipeline
-    [t_opensky, t_airports, t_postgres] >> dbt_staging >> dbt_intermediate >> dbt_marts
+    # Ingestion lands Bronze data -> dbt runs end-to-end pipeline
+    [t_opensky, t_airports, t_postgres] >> dbt_transformations
 
 aviation_lakehouse_dag()

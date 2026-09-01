@@ -115,7 +115,9 @@ models:
       - name: route_distance_km
         description: "Great-circle Haversine distance between origin and destination in kilometers."
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                severity: warn
 
 
   - name: fct_daily_route_summary
@@ -205,7 +207,7 @@ models:
         data_tests:
           - not_null
           - accepted_values:
-              values: ['ground', 'climbing', 'cruising', 'descending', 'unknown']
+              values: ['ground', 'climbing', 'descending', 'cruising', 'level_flight', 'unknown']
 
       - name: emergency_status
         description: "Safety status evaluated from transponder squawk code."

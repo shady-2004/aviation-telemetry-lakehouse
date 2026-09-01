@@ -5,8 +5,17 @@ with source as (
 cleaned as (
     select
         -- Identifiers
-        upper(nullif(nullif(nullif(nullif(trim(icao),'\N'),'None'),'-'),'')) as icao_code,
-        upper(nullif(nullif(nullif(nullif(trim(iata),'\N'),'None'),'-'),'')) as iata_code,
+        case 
+            when trim(upper(icao::varchar)) ~ '^[A-Z0-9]{3}$' 
+            then trim(upper(icao::varchar))
+            else null 
+        end as icao_code,
+        
+        case 
+            when trim(upper(iata::varchar)) ~ '^[A-Z0-9]{2}$' 
+            then trim(upper(iata::varchar))
+            else null 
+        end as iata_code,
         upper(nullif(nullif(nullif(nullif(trim(callsign),'\N'),'None'),'-'),'')) as callsign,
 
         -- Descriptive Attributes

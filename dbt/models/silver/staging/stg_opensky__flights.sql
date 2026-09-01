@@ -9,30 +9,29 @@ flattened as (
         to_timestamp(time::bigint) as fetch_timestamp,
         unnest(states) as state
     from source
-
 ),
 
 renamed as (
     select 
         -- Identifiers
-        lower(trim(state[1]::varchar)) as icao_address , 
-        nullif(trim(state[2]::varchar) , '') as callsign_code ,
-        nullif(trim(state[3]::varchar),'') as origin_country , 
+        lower(trim(state[1]::varchar)) as icao_address, 
+        nullif(trim(state[2]::varchar), '') as callsign_code,
+        nullif(trim(state[3]::varchar), '') as origin_country, 
 
-        -- Derivied icao code
+        -- Derived icao code
         case
-            when length(nullif(trim(state[2]::varchar),'')) >= 3 
-            then upper(substring(trim(state[2]::varchar),1,3))
+            when length(nullif(trim(state[2]::varchar), '')) >= 3 
+            then upper(substring(trim(state[2]::varchar), 1, 3))
             else null
         end as icao_code,
 
         -- Timestamps
-        to_timestamp(state[4]::bigint) as position_timestamp , 
+        to_timestamp(state[4]::bigint) as position_timestamp, 
         to_timestamp(state[5]::bigint) as last_seen_timestamp,
 
-        -- Telemetry & Coordinates
-        state[6]::double as latitude,
-        state[7]::double as longitude,
+        -- Telemetry & Coordinates (state[7] is Lat, state[6] is Lon)
+        state[7]::double as latitude,
+        state[6]::double as longitude,
         state[8]::double as baro_altitude_meters,
         state[14]::double as geo_altitude_meters, 
         state[10]::double as velocity_mps,
@@ -40,7 +39,6 @@ renamed as (
         state[12]::double as vertical_rate_mps, 
 
         -- Flags 
-
         coalesce(state[9]::boolean, false) as is_on_ground,
         coalesce(state[16]::boolean, false) as is_spi,
         nullif(trim(state[15]::varchar), '') as squawk_code,
@@ -48,19 +46,21 @@ renamed as (
 
         partition_date
 
-        from flattened
+    from flattened
 
-        --Quality Filters
-        where state[1] is not null                                 -- Must have ICAO 
-        and (state[7]::double between -90 and 90 or state[7] is null)  -- Validate latitude range
-        and (state[6]::double between -180 and 180 or state[6] is null) -- Validate longitude range
+    -- Quality Filters: Strictly enforce non-null spatial and temporal attributes
+    where state[1] is not null                                  -- Must have ICAO address
+      and state[4] is not null                                  -- Must have event timestamp
+      and state[7] is not null                                  -- Must have latitude
+      and state[6] is not null                                  -- Must have longitude
+      and state[7]::double between -90.0 and 90.0               -- Valid Latitude bounds
+      and state[6]::double between -180.0 and 180.0             -- Valid Longitude bounds
 
-        -- Deduplicate identical state vectors sent in the same batch
-        qualify row_number() over (
+    -- Deduplicate identical state vectors sent in the same batch
+    qualify row_number() over (
         partition by lower(trim(state[1]::varchar)), to_timestamp(state[4]::bigint)
         order by fetch_timestamp desc
-        ) = 1
-
+    ) = 1
 )
 
 select * from renamed

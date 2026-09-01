@@ -3,14 +3,24 @@ aviation_lakehouse:
   outputs:
     dev:
       type: duckdb
-      path: 'aviation_lakehouse.duckdb'
-      external_root: 's3://aviation-lakehouse'
+      path: /opt/airflow/dbt/dev.duckdb
+      threads: 1
+      external_root: "s3://aviation-lakehouse"
+
       extensions:
-        - parquet
         - httpfs
-      settings:
-        s3_endpoint: '127.0.0.1:9000'
-        s3_access_key_id: 'minioadmin'
-        s3_secret_access_key: 'minioadmin'
-        s3_use_ssl: false
-        s3_url_style: 'path'
+        - parquet
+
+      secrets:
+        - type: s3
+          key_id: minioadmin
+          secret: minioadmin
+          endpoint: minio:9000
+          use_ssl: false
+          url_style: path
+          region: us-east-1
+
+      attach:
+        - path: "dbname=aviation_db user=postgres password=postgres host=postgres port=5432"
+          type: postgres
+          alias: postgres_db

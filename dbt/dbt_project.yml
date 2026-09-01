@@ -18,21 +18,9 @@ models:
       staging:
         +materialized: view
       intermediate:
-        +materialized: external
-        +format: parquet
-        +schema: silver_intermediate
-
+        +materialized: view
     gold:
       marts:
-        core:
-          +materialized: external
-          +format: parquet
-          +schema: gold_core
-        commercial:
-          +materialized: external
-          +format: parquet
-          +schema: gold_commercial
-        operations:
-          +materialized: external
-          +format: parquet
-          +schema: gold_operations
+        +materialized: external
+        +format: parquet
+        +external_location: "s3://aviation-lakehouse/{name}.parquet"
