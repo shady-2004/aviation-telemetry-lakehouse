@@ -7,6 +7,16 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
     AIRFLOW__WEBSERVER__SECRET_KEY: "aviation_lakehouse_secret_key_12345"
+    MINIO_ENDPOINT: minio:9000
+    MINIO_ACCESS_KEY: minioadmin
+    MINIO_SECRET_KEY: minioadmin
+    MINIO_SECURE: "false"
+
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: 5432
+    POSTGRES_DB: aviation_db
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
     # DO NOT include _PIP_ADDITIONAL_REQUIREMENTS here
   volumes:
     - ./dags:/opt/airflow/dags
