@@ -40,6 +40,7 @@ default_args = {
     schedule="@hourly",
     catchup=False,
     max_active_runs=1,
+    max_active_tasks=1, 
 )
 def aviation_lakehouse_dag():
 

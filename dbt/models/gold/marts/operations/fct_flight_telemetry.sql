@@ -1,20 +1,12 @@
-{{
-    config(
-        materialized='incremental',
-        unique_key='flight_ping_hk',
-        incremental_strategy='delete+insert'
-    )
-}} 
+{{ config(
+    materialized='external',
+    location='s3://aviation-lakehouse/fct_flight_telemetry',
+    options={'partition_by': 'date_key', 'overwrite_or_ignore': true}
+) }}
 
 with flights as (
     select * from {{ ref('int_flights__enriched') }}
-    {% if is_incremental() %}
-        -- Prune upstream scanning using the event timestamp
-        where position_timestamp >= (
-            select coalesce(max(position_timestamp), '1970-01-01'::timestamp) - interval '3 hours'
-            from {{ this }}
-        )
-    {% endif %}
+        where position_timestamp >= current_date() - interval '2 days'
 ),
 
 airlines as (
