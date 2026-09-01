@@ -1,6 +1,20 @@
+{{
+    config(
+        materialized='incremental',
+        unique_key='flight_ping_hk',
+        incremental_strategy='delete+insert'
+    )
+}} 
 
 with flights as (
     select * from {{ ref('int_flights__enriched') }}
+    {% if is_incremental() %}
+        -- Prune upstream scanning using the event timestamp
+        where position_timestamp >= (
+            select coalesce(max(position_timestamp), '1970-01-01'::timestamp) - interval '3 hours'
+            from {{ this }}
+        )
+    {% endif %}
 ),
 
 airlines as (
@@ -43,7 +57,10 @@ select
     -- Timestamps & Ingestion Partition
     f.position_timestamp,
     f.last_seen_timestamp,
-    f.partition_date
+    f.partition_date,
+
+    -- Audit Metadata
+    current_timestamp as dbt_updated_at
 
 from flights f
 left join airlines a

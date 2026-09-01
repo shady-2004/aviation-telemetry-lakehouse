@@ -18,10 +18,7 @@ models:
       staging:
         +materialized: view
       intermediate:
-        +materialized: external
-        +format: parquet
-        +schema: silver_intermediate
-
+        +materialized: view
     gold:
       marts:
         core:
