@@ -6,29 +6,31 @@ cleaned as (
     select 
         -- Identifiers
         case 
-            when trim(airline) in ('','\N','None','-') then null else upper(trim(airline))
-            end as airline_code,
+            when trim(replace(airline, '"', '')) in ('', '\N', 'None', '-', '???') then null 
+            else upper(trim(replace(airline, '"', '')))
+        end as airline_code,
+
         case 
-            when trim(source_airport) in ('','\N','None','-') then null else upper(trim(source_airport))
-            end as source_airport_code,
+            when trim(replace(source_airport, '"', '')) in ('', '\N', 'None', '-', '???') then null 
+            else upper(trim(replace(source_airport, '"', '')))
+        end as source_airport_code,
+
         case 
-            when trim(destination_airport) in ('','\N','None','-') then null else upper(trim(destination_airport))
-            end as destination_airport_code,
+            when trim(replace(destination_airport, '"', '')) in ('', '\N', 'None', '-', '???') then null 
+            else upper(trim(replace(destination_airport, '"', '')))
+        end as destination_airport_code,
             
         -- Route Attributes
         case 
-            when trim(equipment) in ('','\N','None','-') then null else upper(trim(equipment))
-            end as equipment_codes,
+            when trim(replace(equipment, '"', '')) in ('', '\N', 'None', '-', '???') then null 
+            else upper(trim(replace(equipment, '"', '')))
+        end as equipment_codes,
         
-        stops::integer as stop_count,
+        coalesce(try_cast(trim(replace(stops::varchar, '"', '')) as integer), 0) as stop_count,
 
         -- Flags
-        case 
-            when upper(trim(codeshare)) = 'Y' then true
-            else false
-        end as is_codeshare,
+        coalesce(upper(trim(replace(codeshare::varchar, '"', ''))) = 'Y', false) as is_codeshare
 
-        -- Metadata
     from source
 ),
 
@@ -43,18 +45,17 @@ renamed as (
     from cleaned
 
     where airline_code is not null
-        and source_airport_code is not null
-        and destination_airport_code is not null
-        and coalesce(airline_code, source_airport_code, destination_airport_code) is not null
+      and source_airport_code is not null
+      and destination_airport_code is not null
+      and source_airport_code != destination_airport_code
         
     qualify row_number() over (
-        partition by coalesce(airline_code, source_airport_code, destination_airport_code)
+        partition by airline_code, source_airport_code, destination_airport_code
         order by 
             case when stop_count = 0 then 1 else 2 end,
-            case when is_codeshare then 1 else 2 end,
+            case when not is_codeshare then 1 else 2 end,  -- Prefer the operating carrier over the codeshare
             case when equipment_codes is not null then 1 else 2 end
     ) = 1
 )
 
 select * from renamed
-
