@@ -267,6 +267,7 @@ aviation-telemetry-lakehouse/
 **Prerequisites**
 - Docker & Docker Compose
 - Python 3.10+
+  
 **1. Start Infrastructure**
  
 Spin up MinIO, PostgreSQL, and Apache Airflow:
